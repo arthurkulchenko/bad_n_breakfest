@@ -1,4 +1,4 @@
-module github.com/arthurkulchenko/bad_n_breakfest
+module github.com/arthurkulchenko/bed_n_breakfest
 
 go 1.19
 
