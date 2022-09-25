@@ -15,5 +15,11 @@ func Routes(appP *config.AppConfig) http.Handler {
 	mux.Use(SessionLoad)
 	mux.Get("/", handlers.RepositoryPointer.Home)
 	mux.Get("/about", handlers.RepositoryPointer.About)
+	mux.Get("/generals", handlers.RepositoryPointer.General)
+	mux.Get("/majors", handlers.RepositoryPointer.Major)
+	mux.Get("/reservation", handlers.RepositoryPointer.Reservation)
+	mux.Get("/contacts", handlers.RepositoryPointer.Contact)
+	fileServer := http.FileServer(http.Dir("./static/"))
+	mux.Handle("/static/*", http.StripPrefix("/static", fileServer))
 	return mux
 }

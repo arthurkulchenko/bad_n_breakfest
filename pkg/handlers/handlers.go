@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	// "fmt"
+	"fmt"
 	"net/http"
 	"html/template"
 	"log"
@@ -60,6 +60,29 @@ func (receiver *Repository) About(response http.ResponseWriter, request *http.Re
 	renderTemplate(response, "about.page.tmpl", &TemplateData { StringMap: stringMap })
 }
 
+func (receiver *Repository) Reservation(response http.ResponseWriter, request *http.Request) {
+	stringMap := make(map[string]string)
+	session := receiver.AppConfigPointer.Session
+	stringMap["remoteaddr"] = session.GetString(request.Context(), "remoteaddr")
+
+	renderTemplate(response, "reservation.page.tmpl", &TemplateData { StringMap: stringMap })
+}
+
+func (receiver *Repository) General(response http.ResponseWriter, request *http.Request) {
+	stringMap := make(map[string]string)
+	renderTemplate(response, "generals.page.tmpl", &TemplateData { StringMap: stringMap })
+}
+
+func (receiver *Repository) Major(response http.ResponseWriter, request *http.Request) {
+	stringMap := make(map[string]string)
+	renderTemplate(response, "majors.page.tmpl", &TemplateData { StringMap: stringMap })
+}
+
+func (receiver *Repository) Contact(response http.ResponseWriter, request *http.Request) {
+	stringMap := make(map[string]string)
+	renderTemplate(response, "contacts.page.tmpl", &TemplateData { StringMap: stringMap })
+}
+
 func addDefaultData(templateDataPointer *TemplateData) *TemplateData {
 	return templateDataPointer
 }
@@ -84,7 +107,10 @@ func renderTemplate(response http.ResponseWriter, templateName string, templateD
 func CreateTemplateCache() (map[string]*template.Template, error) {
 	cache := map[string]*template.Template{}
 	pages, err := filepath.Glob("./templates/*.page.tmpl")
-	if err != nil { return cache, err }
+	if err != nil {
+		fmt.Println(err)
+		return cache, err
+	}
 	for _, page := range pages {
 		name := filepath.Base(page) // returs last element from '/'
 		parsedTemplatePointer, err := template.New(name).ParseFiles(page)
