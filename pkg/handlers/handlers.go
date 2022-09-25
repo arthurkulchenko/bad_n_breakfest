@@ -60,6 +60,14 @@ func (receiver *Repository) About(response http.ResponseWriter, request *http.Re
 	renderTemplate(response, "about.page.tmpl", &TemplateData { StringMap: stringMap })
 }
 
+func (receiver *Repository) Reservation(response http.ResponseWriter, request *http.Request) {
+	stringMap := make(map[string]string)
+	session := receiver.AppConfigPointer.Session
+	stringMap["remoteaddr"] = session.GetString(request.Context(), "remoteaddr")
+
+	renderTemplate(response, "reservation.page.tmpl", &TemplateData { StringMap: stringMap })
+}
+
 func addDefaultData(templateDataPointer *TemplateData) *TemplateData {
 	return templateDataPointer
 }
