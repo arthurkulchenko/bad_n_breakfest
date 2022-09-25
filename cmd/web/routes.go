@@ -11,7 +11,7 @@ import(
 func Routes(appP *config.AppConfig) http.Handler {
 	mux := chi.NewRouter()
 	mux.Use(middleware.Recoverer)
-	mux.Use(NoSurf)
+	// mux.Use(NoSurf)
 	mux.Use(SessionLoad)
 	mux.Get("/", handlers.RepositoryPointer.Home)
 	mux.Get("/about", handlers.RepositoryPointer.About)
@@ -19,6 +19,8 @@ func Routes(appP *config.AppConfig) http.Handler {
 	mux.Get("/majors", handlers.RepositoryPointer.Major)
 	mux.Get("/reservation", handlers.RepositoryPointer.Reservation)
 	mux.Get("/contacts", handlers.RepositoryPointer.Contact)
+	mux.Get("/search-availability", handlers.RepositoryPointer.SearchAvailability)
+	mux.Post("/search-availability", handlers.RepositoryPointer.PostSearchAvailability)
 	fileServer := http.FileServer(http.Dir("./static/"))
 	mux.Handle("/static/*", http.StripPrefix("/static", fileServer))
 	return mux

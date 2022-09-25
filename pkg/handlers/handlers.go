@@ -83,6 +83,18 @@ func (receiver *Repository) Contact(response http.ResponseWriter, request *http.
 	renderTemplate(response, "contacts.page.tmpl", &TemplateData { StringMap: stringMap })
 }
 
+func (receiver *Repository) SearchAvailability(response http.ResponseWriter, request *http.Request) {
+	stringMap := make(map[string]string)
+	// stringMap['CSRFToken'] = csrft
+	renderTemplate(response, "search-availability.page.tmpl", &TemplateData { StringMap: stringMap })
+}
+
+func (receiver *Repository) PostSearchAvailability(response http.ResponseWriter, request *http.Request) {
+	response.Write([]byte("Posted to search availability!"))
+	// stringMap := make(map[string]string)
+	// renderTemplate(response, "search-availability.page.tmpl", &TemplateData { StringMap: stringMap })
+}
+
 func addDefaultData(templateDataPointer *TemplateData) *TemplateData {
 	return templateDataPointer
 }
