@@ -225,15 +225,10 @@
                 focusConfirm: false,
                 showCancelButton: true,
                 willOpen: () => {
-                    const elem = document.getElementById("reservation-dates-modal");
-                    const rp = new DateRangePicker(elem, {
-                        format: 'yyyy-mm-dd',
-                        showOnFocus: true,
-                    })
+                  if (c.willOpen !== undefined) { c.willOpen(); }
                 },
                 didOpen: () => {
-                    document.getElementById("start").removeAttribute("disabled");
-                    document.getElementById("end").removeAttribute("disabled");
+                  if (c.willOpen !== undefined) { c.didOpen(); }
                 },
                 preConfirm: () => {
                     return [
@@ -244,7 +239,18 @@
             })
 
             if (formValues) {
-                Swal.fire(JSON.stringify(formValues))
+                // Swal.fire(JSON.stringify(formValues))
+                if (formValues.dismiss !== Swal.DismissReason.cancel) {
+                    if (formValues.value !== "") {
+                        if (c.callback !== undefined) {
+                            c.callback(formValues)
+                        }
+                    } else {
+                        c.callback(false);
+                    }
+                } else {
+                    c.callback(false);
+                }
             }
         }
 

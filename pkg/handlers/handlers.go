@@ -104,7 +104,7 @@ func (receiver *Repository) PostSearchAvailability(response http.ResponseWriter,
 	// renderTemplate(response, request, "search-availability.page.tmpl", &TemplateData { StringMap: stringMap })
 }
 
-func (receiver *Repository) GetSearchAvailabilityJson(response http.ResponseWriter, request *http.Request) {
+func (receiver *Repository) PostSearchAvailabilityJson(response http.ResponseWriter, request *http.Request) {
 	resp := jsonResponse { OK: true, Message: "Available!" }
 	out, err := json.Marshal(resp)
 	if err != nil {
