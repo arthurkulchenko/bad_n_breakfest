@@ -1,4 +1,6 @@
-package templatedata
+package models
+
+import "github.com/arthurkulchenko/bed_n_breakfest/internal/forms"
 
 type TemplateData struct {
 	StringMap map[string]string
@@ -9,4 +11,5 @@ type TemplateData struct {
 	Flash string
 	Watrning string
 	Error string
+	Form *forms.Form
 }
