@@ -8,9 +8,9 @@ import (
 	"log"
 	"path/filepath"
 	"bytes"
-	"github.com/arthurkulchenko/bed_n_breakfest/pkg/config"
+	"github.com/arthurkulchenko/bed_n_breakfest/internal/config"
 	"github.com/justinas/nosurf"
-	// "github.com/arthurkulchenko/bed_n_breakfest/pkg/models"
+	// "github.com/arthurkulchenko/bed_n_breakfest/internal/models"
 )
 
 var appConfigP *config.AppConfig

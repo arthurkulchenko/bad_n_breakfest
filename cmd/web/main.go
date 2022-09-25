@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/alexedwards/scs/v2"
-	"github.com/arthurkulchenko/bed_n_breakfest/pkg/config"
-	"github.com/arthurkulchenko/bed_n_breakfest/pkg/handlers"
+	"github.com/arthurkulchenko/bed_n_breakfest/internal/config"
+	"github.com/arthurkulchenko/bed_n_breakfest/internal/handlers"
 	"log"
 	"net/http"
 	"time"
