@@ -2,12 +2,14 @@ package handlers
 
 import (
 	"fmt"
+	"encoding/json"
 	"net/http"
 	"html/template"
 	"log"
 	"path/filepath"
 	"bytes"
 	"github.com/arthurkulchenko/bed_n_breakfest/pkg/config"
+	"github.com/justinas/nosurf"
 	// "github.com/arthurkulchenko/bed_n_breakfest/pkg/models"
 )
 
@@ -43,13 +45,18 @@ type TemplateData struct {
 	Error string
 }
 
+type jsonResponse struct {
+	OK bool `json:"ok"`
+	Message string `json:"message"`
+}
+
 func (receiver *Repository) Home(response http.ResponseWriter, request *http.Request) {
 	stringMap := make(map[string]string)
 	session := receiver.AppConfigPointer.Session
 	stringMap["remoteaddr"] = request.RemoteAddr
 	session.Put(request.Context(), "remoteaddr", request.RemoteAddr)
 
-	renderTemplate(response, "home.page.tmpl", &TemplateData { StringMap: stringMap })
+	renderTemplate(response, request, "home.page.tmpl", &TemplateData { StringMap: stringMap })
 }
 
 func (receiver *Repository) About(response http.ResponseWriter, request *http.Request) {
@@ -57,7 +64,7 @@ func (receiver *Repository) About(response http.ResponseWriter, request *http.Re
 	session := receiver.AppConfigPointer.Session
 	stringMap["remoteaddr"] = session.GetString(request.Context(), "remoteaddr")
 
-	renderTemplate(response, "about.page.tmpl", &TemplateData { StringMap: stringMap })
+	renderTemplate(response, request, "about.page.tmpl", &TemplateData { StringMap: stringMap })
 }
 
 func (receiver *Repository) Reservation(response http.ResponseWriter, request *http.Request) {
@@ -65,41 +72,56 @@ func (receiver *Repository) Reservation(response http.ResponseWriter, request *h
 	session := receiver.AppConfigPointer.Session
 	stringMap["remoteaddr"] = session.GetString(request.Context(), "remoteaddr")
 
-	renderTemplate(response, "reservation.page.tmpl", &TemplateData { StringMap: stringMap })
+	renderTemplate(response, request, "reservation.page.tmpl", &TemplateData { StringMap: stringMap })
 }
 
 func (receiver *Repository) General(response http.ResponseWriter, request *http.Request) {
 	stringMap := make(map[string]string)
-	renderTemplate(response, "generals.page.tmpl", &TemplateData { StringMap: stringMap })
+	renderTemplate(response, request, "generals.page.tmpl", &TemplateData { StringMap: stringMap })
 }
 
 func (receiver *Repository) Major(response http.ResponseWriter, request *http.Request) {
 	stringMap := make(map[string]string)
-	renderTemplate(response, "majors.page.tmpl", &TemplateData { StringMap: stringMap })
+	renderTemplate(response, request, "majors.page.tmpl", &TemplateData { StringMap: stringMap })
 }
 
 func (receiver *Repository) Contact(response http.ResponseWriter, request *http.Request) {
 	stringMap := make(map[string]string)
-	renderTemplate(response, "contacts.page.tmpl", &TemplateData { StringMap: stringMap })
+	renderTemplate(response, request, "contacts.page.tmpl", &TemplateData { StringMap: stringMap })
 }
 
 func (receiver *Repository) SearchAvailability(response http.ResponseWriter, request *http.Request) {
 	stringMap := make(map[string]string)
-	// stringMap['CSRFToken'] = csrft
-	renderTemplate(response, "search-availability.page.tmpl", &TemplateData { StringMap: stringMap })
+	renderTemplate(response, request, "search-availability.page.tmpl", &TemplateData { StringMap: stringMap })
 }
 
 func (receiver *Repository) PostSearchAvailability(response http.ResponseWriter, request *http.Request) {
-	response.Write([]byte("Posted to search availability!"))
+	start := request.Form.Get("start")
+	end := request.Form.Get("end")
+
+	response.Write([]byte(fmt.Sprintf("Start date is %s, end date is %s", start, end)))
 	// stringMap := make(map[string]string)
-	// renderTemplate(response, "search-availability.page.tmpl", &TemplateData { StringMap: stringMap })
+	// renderTemplate(response, request, "search-availability.page.tmpl", &TemplateData { StringMap: stringMap })
 }
 
-func addDefaultData(templateDataPointer *TemplateData) *TemplateData {
+func (receiver *Repository) GetSearchAvailabilityJson(response http.ResponseWriter, request *http.Request) {
+	resp := jsonResponse { OK: true, Message: "Available!" }
+	out, err := json.Marshal(resp)
+	if err != nil {
+		log.Println(err)
+	}
+
+	response.Header().Set("Content-Type", "application/json")
+	response.Write([]byte(fmt.Sprintf("%s", out)))
+}
+
+func addDefaultData(templateDataPointer *TemplateData, request *http.Request) *TemplateData {
+	templateDataPointer.CSRFToken = nosurf.Token(request)
+	// stringMap['CSRFToken'] = csrft
 	return templateDataPointer
 }
 
-func renderTemplate(response http.ResponseWriter, templateName string, templateData *TemplateData) {
+func renderTemplate(response http.ResponseWriter, request *http.Request, templateName string, templateData *TemplateData) {
 	var templateCache map[string]*template.Template
 	if appConfigP.UseCache {
 		templateCache = appConfigP.TemplateCache
@@ -109,7 +131,7 @@ func renderTemplate(response http.ResponseWriter, templateName string, templateD
 	cachedTemplate, exists := templateCache[templateName]
 	if !exists { log.Fatal("Could not get template cache")}
 	buffer := new(bytes.Buffer)
-	templateData = addDefaultData(templateData)
+	templateData = addDefaultData(templateData, request)
 	err := cachedTemplate.Execute(buffer, templateData)
 	if err != nil { log.Println(err) }
 	_, err = buffer.WriteTo(response)
