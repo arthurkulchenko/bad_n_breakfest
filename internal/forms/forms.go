@@ -17,6 +17,14 @@ func New(data url.Values) *Form {
 	}
 }
 
-func (form Form) Has(field string, request *http.Request) bool {
-	return request.Form.Get(field) != ""
+func (form *Form) Has(field string, request *http.Request) bool {
+	isAttrPresent := request.Form.Get(field) != ""
+	if !isAttrPresent {
+		form.Errors.Add(field, "Cannot be blank")
+	}
+	return isAttrPresent
+}
+
+func (form *Form) Valid() bool {
+	return len(form.Errors) == 0
 }

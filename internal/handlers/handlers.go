@@ -77,7 +77,26 @@ func (receiver *Repository) Reservation(response http.ResponseWriter, request *h
 }
 
 func (receiver *Repository) PostReservation(response http.ResponseWriter, request *http.Request) {
+	formError := receiver.ParseForm()
+	if formError != nil {
+		log.Println(formError)
+		return
+	}
 
+	reservation := models.Reservation{
+		FirstName: receiver.Form.Get("first_name"),
+		LastName: receiver.Form.Get("last_name"),
+		Email: receiver.Form.Get("email"),
+		Phone: receiver.Form.Get("phone"),
+	}
+	form := forms.New(receiver.PostForm)
+	form.Has("first_name", receiver)
+	if !form.Valid() {
+		data := make([string]interface{})
+		data["reservation"] = reservation
+		renderTemplate(response, request, "reservation.page.tmpl", &models.TemplateData { Form: form, Data: data })
+		return
+	}
 }
 
 func (receiver *Repository) General(response http.ResponseWriter, request *http.Request) {
