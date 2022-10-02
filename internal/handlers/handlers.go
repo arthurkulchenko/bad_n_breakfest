@@ -69,11 +69,11 @@ func (receiver *Repository) About(response http.ResponseWriter, request *http.Re
 }
 
 func (receiver *Repository) Reservation(response http.ResponseWriter, request *http.Request) {
-	// stringMap := make(map[string]string)
-	// session := receiver.AppConfigPointer.Session
-	// stringMap["remoteaddr"] = session.GetString(request.Context(), "remoteaddr")
+	var nullReservation models.Reservation
+	data := make(map[string]interface{})
+	data["reservation"] = nullReservation
 
-	renderTemplate(response, request, "reservation.page.tmpl", &models.TemplateData { Form: forms.New(nil) })
+	renderTemplate(response, request, "reservation.page.tmpl", &models.TemplateData { Form: forms.New(nil), Data: data })
 }
 
 func (receiver *Repository) PostReservation(response http.ResponseWriter, request *http.Request) {
@@ -90,7 +90,10 @@ func (receiver *Repository) PostReservation(response http.ResponseWriter, reques
 		Phone: request.Form.Get("phone"),
 	}
 	form := forms.New(request.PostForm)
-	form.Has("first_name", request)
+	// form.Has("first_name", request)
+	form.Required("first_name", "last_name", "email")
+	form.MinLen(3, "first_name", "last_name", "email")
+	form.IsEmail("email")
 	if !form.Valid() {
 		data := make(map[string]interface{})
 		data["reservation"] = reservation
