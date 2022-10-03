@@ -100,6 +100,22 @@ func (receiver *Repository) PostReservation(response http.ResponseWriter, reques
 		renderTemplate(response, request, "reservation.page.tmpl", &models.TemplateData { Form: form, Data: data })
 		return
 	}
+
+	receiver.AppConfigPointer.Session.Put(request.Context(), "reservation", reservation)
+	http.Redirect(response, request, "/reservation-summary", http.StatusSeeOther)
+}
+
+func (receiver *Repository) GetReservationSummary(response http.ResponseWriter, request *http.Request) {
+	// stringMap := make(map[string]string)
+	data := make(map[string]interface{})
+	session := receiver.AppConfigPointer.Session
+	reservation, fetchingStatus := session.Get(request.Context(), "reservation").(models.Reservation)
+	if !fetchingStatus {
+		session.Put(request.Context(), "error", "Can't get reservation")
+		http.Redirect(response, request, "/reservation", http.StatusTemporaryRedirect)
+	}
+	data["reservation"] = reservation
+	renderTemplate(response, request, "reservation-summary.page.tmpl", &models.TemplateData { Data: data })
 }
 
 func (receiver *Repository) General(response http.ResponseWriter, request *http.Request) {
@@ -134,9 +150,7 @@ func (receiver *Repository) PostSearchAvailability(response http.ResponseWriter,
 func (receiver *Repository) PostSearchAvailabilityJson(response http.ResponseWriter, request *http.Request) {
 	resp := jsonResponse { OK: true, Message: "Available!" }
 	out, err := json.Marshal(resp)
-	if err != nil {
-		log.Println(err)
-	}
+	if err != nil { log.Println(err) }
 
 	response.Header().Set("Content-Type", "application/json")
 	response.Write([]byte(fmt.Sprintf("%s", out)))
@@ -144,7 +158,9 @@ func (receiver *Repository) PostSearchAvailabilityJson(response http.ResponseWri
 
 func addDefaultData(templateDataPointer *models.TemplateData, request *http.Request) *models.TemplateData {
 	templateDataPointer.CSRFToken = nosurf.Token(request)
-	// stringMap['CSRFToken'] = csrft
+	templateDataPointer.Flash = appConfigP.Session.PopString(request.Context(), "flash")
+	templateDataPointer.Error = appConfigP.Session.PopString(request.Context(), "error")
+	templateDataPointer.Warning = appConfigP.Session.PopString(request.Context(), "warning")
 	return templateDataPointer
 }
 

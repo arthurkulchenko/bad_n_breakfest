@@ -9,7 +9,7 @@ type TemplateData struct {
 	Data map[string]interface{}
 	CSRFToken string
 	Flash string
-	Watrning string
+	Warning string
 	Error string
 	Form *forms.Form
 }
