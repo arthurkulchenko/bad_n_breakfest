@@ -113,6 +113,8 @@ func (receiver *Repository) GetReservationSummary(response http.ResponseWriter, 
 	if !fetchingStatus {
 		session.Put(request.Context(), "error", "Can't get reservation")
 		http.Redirect(response, request, "/reservation", http.StatusTemporaryRedirect)
+		session.Remove(request.Context(), "reservation")
+		return
 	}
 	data["reservation"] = reservation
 	renderTemplate(response, request, "reservation-summary.page.tmpl", &models.TemplateData { Data: data })
