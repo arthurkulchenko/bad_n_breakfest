@@ -46,3 +46,7 @@ func main() {
 	err = server.ListenAndServe()
 	log.Fatal(err)
 }
+
+func run() error {
+	return nil
+}
