@@ -1,0 +1,8 @@
+mode: set
+github.com/arthurkulchenko/bed_n_breakfest/cmd/web/main.go:19.13,30.16 10 0
+github.com/arthurkulchenko/bed_n_breakfest/cmd/web/main.go:35.2,47.16 8 0
+github.com/arthurkulchenko/bed_n_breakfest/cmd/web/main.go:30.16,33.3 2 0
+github.com/arthurkulchenko/bed_n_breakfest/cmd/web/main.go:50.18,52.2 1 1
+github.com/arthurkulchenko/bed_n_breakfest/cmd/web/middleware.go:16.45,20.2 3 1
+github.com/arthurkulchenko/bed_n_breakfest/cmd/web/middleware.go:22.50,24.2 1 1
+github.com/arthurkulchenko/bed_n_breakfest/cmd/web/routes.go:11.50,30.2 18 1

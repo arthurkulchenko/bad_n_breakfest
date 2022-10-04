@@ -38,9 +38,6 @@ func main() {
 
 	handlers.SetConfigAndRepository(&app)
 
-	// handlersRepo := handlers.NewRepo(&app)
-	// handlers.NewHandlers(handlersRepo)
-
 	fmt.Println(fmt.Sprintf("=======================\nStarting application on\nlocalhost%s\n=======================", app.PortNumber))
 	server := &http.Server { Addr: app.PortNumber, Handler: Routes(&app) }
 	err = server.ListenAndServe()
