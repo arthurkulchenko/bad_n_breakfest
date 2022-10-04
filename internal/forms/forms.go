@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-		"github.com/asaskevich/govalidator"
+	"github.com/asaskevich/govalidator"
 )
 
 type Form struct {

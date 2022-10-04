@@ -5,9 +5,11 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/arthurkulchenko/bed_n_breakfest/internal/config"
 	"github.com/arthurkulchenko/bed_n_breakfest/internal/handlers"
+	"github.com/arthurkulchenko/bed_n_breakfest/internal/models"
 	"log"
 	"net/http"
 	"time"
+	"encoding/gob"
 )
 
 const PORT_NUMBER = ":8080"
@@ -15,6 +17,7 @@ var app config.AppConfig
 var session *scs.SessionManager
 
 func main() {
+	gob.Register(models.Reservation {})
 	app.Env = "development"
 	session = scs.New()
 	session.Lifetime = 24 * time.Hour
@@ -24,8 +27,10 @@ func main() {
 	app.Session = session
 
 	templateCache, err := handlers.CreateTemplateCache()
-	if err != nil { log.Fatal(err) }
-	if err != nil { log.Fatal("Cannot create template cache") }
+	if err != nil {
+		log.Fatal(err)
+		log.Fatal("Cannot create template cache")
+	}
 
 	app.TemplateCache = templateCache
 	app.PortNumber = PORT_NUMBER
@@ -40,4 +45,8 @@ func main() {
 	server := &http.Server { Addr: app.PortNumber, Handler: Routes(&app) }
 	err = server.ListenAndServe()
 	log.Fatal(err)
+}
+
+func run() error {
+	return nil
 }
