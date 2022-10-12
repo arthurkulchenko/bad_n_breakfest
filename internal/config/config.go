@@ -10,6 +10,7 @@ type AppConfig struct {
 	UseCache bool
 	TemplateCache map[string]*template.Template
 	InfoLog *log.Logger
+	ErrorLog *log.Logger
 	PortNumber string
 	Env string
 	Session *scs.SessionManager
