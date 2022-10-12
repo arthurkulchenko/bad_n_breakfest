@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"errors"
 	"encoding/json"
 	"net/http"
 	"html/template"
@@ -12,6 +13,7 @@ import (
 	"github.com/justinas/nosurf"
 	"github.com/arthurkulchenko/bed_n_breakfest/internal/models"
 	"github.com/arthurkulchenko/bed_n_breakfest/internal/forms"
+	"github.com/arthurkulchenko/bed_n_breakfest/internal/helpers"
 )
 
 var appConfigP *config.AppConfig
@@ -79,7 +81,7 @@ func (receiver *Repository) Reservation(response http.ResponseWriter, request *h
 func (receiver *Repository) PostReservation(response http.ResponseWriter, request *http.Request) {
 	formError := request.ParseForm()
 	if formError != nil {
-		log.Println(formError)
+		helpers.ServerError(response, formError)
 		return
 	}
 
@@ -111,6 +113,7 @@ func (receiver *Repository) GetReservationSummary(response http.ResponseWriter, 
 	session := receiver.AppConfigPointer.Session
 	reservation, fetchingStatus := session.Get(request.Context(), "reservation").(models.Reservation)
 	if !fetchingStatus {
+		receiver.AppConfigPointer.ErrorLog.Println("Can't get error from session")
 		session.Put(request.Context(), "error", "Can't get reservation")
 		http.Redirect(response, request, "/reservation", http.StatusTemporaryRedirect)
 		session.Remove(request.Context(), "reservation")
@@ -152,7 +155,10 @@ func (receiver *Repository) PostSearchAvailability(response http.ResponseWriter,
 func (receiver *Repository) PostSearchAvailabilityJson(response http.ResponseWriter, request *http.Request) {
 	resp := jsonResponse { OK: true, Message: "Available!" }
 	out, err := json.Marshal(resp)
-	if err != nil { log.Println(err) }
+	if err != nil {
+		helpers.ServerError(response, err)
+		return
+	}
 
 	response.Header().Set("Content-Type", "application/json")
 	response.Write([]byte(fmt.Sprintf("%s", out)))
@@ -178,9 +184,9 @@ func renderTemplate(response http.ResponseWriter, request *http.Request, templat
 	buffer := new(bytes.Buffer)
 	templateData = addDefaultData(templateData, request)
 	err := cachedTemplate.Execute(buffer, templateData)
-	if err != nil { log.Println(err) }
+	if err != nil { helpers.ServerError(response, err) }
 	_, err = buffer.WriteTo(response)
-	if err != nil { log.Println(err) }
+	if err != nil { helpers.ServerError(response, err) }
 }
 
 func CreateTemplateCache() (map[string]*template.Template, error) {

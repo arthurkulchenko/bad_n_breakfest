@@ -1,7 +1,31 @@
 package main
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+	"net/http"
+)
 
 func TestNoSurve(test *testing.T) {
-	handler := NoSurf()
+	var myH myHandler
+	handler := NoSurf(&myH)
+
+	switch v := handler.(type) {
+	case http.Handler:
+		// do nothing
+	default:
+		test.Error(fmt.Sprintf("type is not http.Handler, but is %T", v))
+	}
+}
+
+func TestSessionLoad(test *testing.T) {
+	var myH myHandler
+	handler := SessionLoad(&myH)
+
+	switch v := handler.(type) {
+	case http.Handler:
+		// do nothing
+	default:
+		test.Error(fmt.Sprintf("type is not http.Handler, but is %T", v))
+	}
 }

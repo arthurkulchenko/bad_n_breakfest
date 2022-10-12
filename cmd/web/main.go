@@ -6,19 +6,25 @@ import (
 	"github.com/arthurkulchenko/bed_n_breakfest/internal/config"
 	"github.com/arthurkulchenko/bed_n_breakfest/internal/handlers"
 	"github.com/arthurkulchenko/bed_n_breakfest/internal/models"
+	"github.com/arthurkulchenko/bed_n_breakfest/internal/helpers"
 	"log"
 	"net/http"
 	"time"
 	"encoding/gob"
+	"os"
 )
 
 const PORT_NUMBER = ":8080"
 var app config.AppConfig
 var session *scs.SessionManager
+var infoLog *log.Logger
+var errorLog *log.Logger
 
 func main() {
 	gob.Register(models.Reservation {})
 	app.Env = "development"
+	app.InfoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+	app.ErrorLog = log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile )
 	session = scs.New()
 	session.Lifetime = 24 * time.Hour
 	session.Cookie.Persist = true
@@ -37,9 +43,7 @@ func main() {
 	app.UseCache = false
 
 	handlers.SetConfigAndRepository(&app)
-
-	// handlersRepo := handlers.NewRepo(&app)
-	// handlers.NewHandlers(handlersRepo)
+	helpers.NewHelpers(&app)
 
 	fmt.Println(fmt.Sprintf("=======================\nStarting application on\nlocalhost%s\n=======================", app.PortNumber))
 	server := &http.Server { Addr: app.PortNumber, Handler: Routes(&app) }
