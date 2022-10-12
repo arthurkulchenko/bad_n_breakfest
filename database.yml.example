@@ -1,0 +1,17 @@
+default: &default
+  # adapter: postgres
+  dialect: postgres
+  database: database
+  user: user
+  password: password
+  host: localhost
+  pool: 5
+
+development:
+  <<: *default
+
+production:
+  <<: *default
+
+test:
+  <<: *default
