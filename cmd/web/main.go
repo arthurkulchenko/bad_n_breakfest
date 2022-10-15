@@ -36,6 +36,9 @@ func main() {
 
 func run() (*driver.DB, error) {
 	gob.Register(models.Reservation {})
+	gob.Register(models.User {})
+	gob.Register(models.Room {})
+	gob.Register(models.Restriction {})
 	app.Env = "development"
 	app.InfoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	app.ErrorLog = log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile )
