@@ -130,8 +130,19 @@ func (receiver *Repository) PostReservation(response http.ResponseWriter, reques
 		return
 	}
 
-	err = receiver.DB.InsertReservation(reservation)
+	reservationId, err := receiver.DB.InsertReservation(reservation)
 	if err != nil { helpers.ServerError(response, err) }
+
+	roomRestriction := models.RoomRestriction{
+		StartDate: startDate,
+		EndDate: endDate,
+		RoomId: roomId,
+		ReservationId: reservationId,
+		RestrictionId: 1,
+	}
+	// roomRestrictionId
+	_, err2 := receiver.DB.InsertRoomRestriction(roomRestriction)
+	if err2 != nil { helpers.ServerError(response, err2) }
 
 	receiver.AppConfigPointer.Session.Put(request.Context(), "reservation", reservation)
 	http.Redirect(response, request, "/reservation-summary", http.StatusSeeOther)
