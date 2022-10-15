@@ -7,6 +7,7 @@ import (
 	"github.com/arthurkulchenko/bed_n_breakfest/internal/handlers"
 	"github.com/arthurkulchenko/bed_n_breakfest/internal/models"
 	"github.com/arthurkulchenko/bed_n_breakfest/internal/helpers"
+	"github.com/arthurkulchenko/bed_n_breakfest/internal/driver"
 	"log"
 	"net/http"
 	"time"
@@ -21,6 +22,19 @@ var infoLog *log.Logger
 var errorLog *log.Logger
 
 func main() {
+	dbConn, err := run()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("Connected to database")
+	defer dbConn.SQL.Close()
+	fmt.Println(fmt.Sprintf("=======================\nStarting application on\nlocalhost%s\n=======================", app.PortNumber))
+	server := &http.Server { Addr: app.PortNumber, Handler: Routes(&app) }
+	err = server.ListenAndServe()
+	log.Fatal(err)
+}
+
+func run() (*driver.DB, error) {
 	gob.Register(models.Reservation {})
 	app.Env = "development"
 	app.InfoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
@@ -31,6 +45,11 @@ func main() {
 	session.Cookie.SameSite = http.SameSiteLaxMode
 	session.Cookie.Secure = app.Env == "production"
 	app.Session = session
+	db, err := driver.ConnectSQL("host=localhost port=5432 dbname=breakfest_and_bed user=wayfarer password=wayfarer")
+	if err != nil {
+		log.Fatal("Cannot connect db.")
+		return nil, err
+	}
 
 	templateCache, err := handlers.CreateTemplateCache()
 	if err != nil {
@@ -42,15 +61,7 @@ func main() {
 	app.PortNumber = PORT_NUMBER
 	app.UseCache = false
 
-	handlers.SetConfigAndRepository(&app)
+	handlers.SetConfigAndRepository(&app, db)
 	helpers.NewHelpers(&app)
-
-	fmt.Println(fmt.Sprintf("=======================\nStarting application on\nlocalhost%s\n=======================", app.PortNumber))
-	server := &http.Server { Addr: app.PortNumber, Handler: Routes(&app) }
-	err = server.ListenAndServe()
-	log.Fatal(err)
-}
-
-func run() error {
-	return nil
+	return db, nil
 }

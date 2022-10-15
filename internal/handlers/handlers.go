@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"fmt"
-	"errors"
+	// "errors"
 	"encoding/json"
 	"net/http"
 	"html/template"
@@ -14,6 +14,9 @@ import (
 	"github.com/arthurkulchenko/bed_n_breakfest/internal/models"
 	"github.com/arthurkulchenko/bed_n_breakfest/internal/forms"
 	"github.com/arthurkulchenko/bed_n_breakfest/internal/helpers"
+	"github.com/arthurkulchenko/bed_n_breakfest/internal/repository"
+	"github.com/arthurkulchenko/bed_n_breakfest/internal/repository/dbrepo"
+	"github.com/arthurkulchenko/bed_n_breakfest/internal/driver"
 )
 
 var appConfigP *config.AppConfig
@@ -22,20 +25,24 @@ var RepositoryPointer *Repository
 
 type Repository struct {
 	AppConfigPointer *config.AppConfig
+	DB repository.DatabaseRepo
 }
 
-func SetConfigAndRepository(appConfigPointer *config.AppConfig) {
+func SetConfigAndRepository(appConfigPointer *config.AppConfig, db *driver.DB) {
 	appConfigP = appConfigPointer
-	RepositoryPointer = &Repository { AppConfigPointer: appConfigPointer }
+	RepositoryPointer = &Repository { AppConfigPointer: appConfigPointer, DB: dbrepo.NewPostgresRepo(db.SQL, appConfigPointer), }
 }
 
-func NewRepo(pointer *config.AppConfig) *Repository {
-	return &Repository { AppConfigPointer: pointer }
-}
+// func NewRepo(pointer *config.AppConfig, db *driver.DB) *Repository {
+// 	return &Repository {
+// 		AppConfigPointer: pointer,
+// 		DB dbrepo.NewPostgresRepo(db.SQL, a)
+// 	}
+// }
 
-func NewHandlers(repositoryPointer *Repository) {
-	RepositoryPointer = repositoryPointer
-}
+// func NewHandlers(repositoryPointer *Repository) {
+// 	RepositoryPointer = repositoryPointer
+// }
 
 type TemplateData struct {
 	StringMap map[string]string
@@ -56,7 +63,11 @@ type jsonResponse struct {
 func (receiver *Repository) Home(response http.ResponseWriter, request *http.Request) {
 	stringMap := make(map[string]string)
 	session := receiver.AppConfigPointer.Session
-	stringMap["remoteaddr"] = request.RemoteAddr
+
+	var users string = fmt.Sprintf("%v", receiver.DB.AllUsers())
+	stringMap["remoteaddr"] = users
+
+	stringMap["remoteaddr1"] = request.RemoteAddr
 	session.Put(request.Context(), "remoteaddr", request.RemoteAddr)
 
 	renderTemplate(response, request, "home.page.tmpl", &models.TemplateData { StringMap: stringMap })
