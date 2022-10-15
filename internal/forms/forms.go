@@ -32,6 +32,10 @@ func (form *Form) Valid() bool {
 	return len(form.Errors) == 0
 }
 
+func (form *Form) Invalid() bool {
+	return len(form.Errors) > 0
+}
+
 func (form *Form) Required(fields ...string) {
 	for _, field := range fields {
 		value := strings.TrimSpace(form.Get(field))

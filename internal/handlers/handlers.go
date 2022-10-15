@@ -3,8 +3,10 @@ package handlers
 import (
 	"fmt"
 	// "errors"
+	"strconv"
 	"encoding/json"
 	"net/http"
+	"time"
 	"html/template"
 	"log"
 	"path/filepath"
@@ -96,23 +98,51 @@ func (receiver *Repository) PostReservation(response http.ResponseWriter, reques
 		return
 	}
 
+	sd := request.Form.Get("start_date")
+	ed :=  request.Form.Get("end_date")
+	// 01/02 03:04:05PM '06 -0700
+	dateLayout := "2006-01-02"
+	startDate, err := time.Parse(dateLayout, sd)
+	if err != nil { helpers.ServerError(response, err) }
+	endDate, err := time.Parse(dateLayout, ed)
+	if err != nil { helpers.ServerError(response, err) }
+	roomId, err := strconv.Atoi(request.Form.Get("room_id"))
+	if err != nil { helpers.ServerError(response, err) }
+
 	reservation := models.Reservation{
 		FirstName: request.Form.Get("first_name"),
 		LastName: request.Form.Get("last_name"),
 		Email: request.Form.Get("email"),
 		Phone: request.Form.Get("phone"),
+		StartDate: startDate,
+		EndDate: endDate,
+		RoomId: roomId,
 	}
 	form := forms.New(request.PostForm)
 	// form.Has("first_name", request)
 	form.Required("first_name", "last_name", "email")
 	form.MinLen(3, "first_name", "last_name", "email")
 	form.IsEmail("email")
-	if !form.Valid() {
+	if form.Invalid() {
 		data := make(map[string]interface{})
 		data["reservation"] = reservation
 		renderTemplate(response, request, "reservation.page.tmpl", &models.TemplateData { Form: form, Data: data })
 		return
 	}
+
+	reservationId, err := receiver.DB.InsertReservation(reservation)
+	if err != nil { helpers.ServerError(response, err) }
+
+	roomRestriction := models.RoomRestriction{
+		StartDate: startDate,
+		EndDate: endDate,
+		RoomId: roomId,
+		ReservationId: reservationId,
+		RestrictionId: 1,
+	}
+	// roomRestrictionId
+	_, err2 := receiver.DB.InsertRoomRestriction(roomRestriction)
+	if err2 != nil { helpers.ServerError(response, err2) }
 
 	receiver.AppConfigPointer.Session.Put(request.Context(), "reservation", reservation)
 	http.Redirect(response, request, "/reservation-summary", http.StatusSeeOther)
