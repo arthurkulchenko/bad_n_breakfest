@@ -32,7 +32,10 @@ type Repository struct {
 
 func SetConfigAndRepository(appConfigPointer *config.AppConfig, db *driver.DB) {
 	appConfigP = appConfigPointer
-	RepositoryPointer = &Repository { AppConfigPointer: appConfigPointer, DB: dbrepo.NewPostgresRepo(db.SQL, appConfigPointer), }
+	RepositoryPointer = &Repository {
+		AppConfigPointer: appConfigPointer,
+		DB: dbrepo.NewPostgresRepo(db.SQL, appConfigPointer),
+	}
 }
 
 // func NewRepo(pointer *config.AppConfig, db *driver.DB) *Repository {
