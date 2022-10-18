@@ -10,9 +10,13 @@
       <div class="col">
         <h1>Choose a room</h1>
         {{$rooms := index .Data "rooms"}}
-        {{range $rooms}}
-          {{.RoomName}}
-        {{end}}
+        <ul>
+          {{range $rooms}}
+            <li>
+              <a href="/choose-room/{{.Id}}">{{.RoomName}}</a>
+            </li>
+          {{end}}
+        </ul>
       </div>
       <img src="/static/images/dear.jpg">
     </div>
