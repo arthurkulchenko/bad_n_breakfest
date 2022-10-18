@@ -1,0 +1,20 @@
+{{template "base" .}}
+
+{{define "title"}}
+  <title>About</title>
+{{end}}
+
+{{define "content"}}
+  <div class="container">
+    <div class="row">
+      <div class="col">
+        <h1>Choose a room</h1>
+        {{$rooms := index .Data "rooms"}}
+        {{range $rooms}}
+          {{.RoomName}}
+        {{end}}
+      </div>
+      <img src="/static/images/dear.jpg">
+    </div>
+  </div>
+{{end}}

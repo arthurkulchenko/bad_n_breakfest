@@ -206,13 +206,17 @@ func (c *Controller) PostSearchAvailability(response http.ResponseWriter, reques
 		helpers.ServerError(response, err)
 		return
 	}
-	for _, room := range rooms {
-		c.AppConfigPointer.InfoLog.Println("Room:", room.Id, room.RoomName)
+	if len(rooms) <= 0 {
+		c.AppConfigPointer.Session.Put(request.Context(), "error", "No Availablity")
+		http.Redirect(response, request, "/search-availability", http.StatusSeeOther)
+		return
 	}
 
-	response.Write([]byte(fmt.Sprintf("Start date is %s, end date is %s", start, end)))
-	// stringMap := make(map[string]string)
-	// renderTemplate(response, request, "search-availability.page.tmpl", &models.TemplateData { StringMap: stringMap })
+	data := make(map[string]interface{})
+	data["rooms"] = rooms
+	dummyReservation := Reservation{StartDate: startDate, EndDate: endDate}
+	c.AppConfigPointer.Session.Put(request.Context(), "dReservation", dummyReservation)
+	renderTemplate(response, request, "choose-room.page.tmpl", &models.TemplateData { Data: data })
 }
 
 func (c *Controller) PostSearchAvailabilityJson(response http.ResponseWriter, request *http.Request) {
