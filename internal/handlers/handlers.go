@@ -22,31 +22,31 @@ import (
 )
 
 var appConfigP *config.AppConfig
-var RepositoryPointer *Repository
-// RepositoryPointer.AppConfigPointer => *config.AppConfig
+var ControllerPointer *Controller
+// ControllerPointer.AppConfigPointer => *config.AppConfig
 
-type Repository struct {
+type Controller struct {
 	AppConfigPointer *config.AppConfig
-	DB repository.DatabaseRepo
+	DB repository.DatabaseInterface
 }
 
 func SetConfigAndRepository(appConfigPointer *config.AppConfig, db *driver.DB) {
 	appConfigP = appConfigPointer
-	RepositoryPointer = &Repository {
+	ControllerPointer = &Controller {
 		AppConfigPointer: appConfigPointer,
 		DB: dbrepo.NewPostgresRepo(db.SQL, appConfigPointer),
 	}
 }
 
-// func NewRepo(pointer *config.AppConfig, db *driver.DB) *Repository {
+// func NewRepo(pointer *config.AppConfig, db *driver.DB) *Controller {
 // 	return &Repository {
 // 		AppConfigPointer: pointer,
 // 		DB dbrepo.NewPostgresRepo(db.SQL, a)
 // 	}
 // }
 
-// func NewHandlers(repositoryPointer *Repository) {
-// 	RepositoryPointer = repositoryPointer
+// func NewHandlers(ControllerPointer *Controller) {
+// 	ControllerPointer = ControllerPointer
 // }
 
 type TemplateData struct {
@@ -65,11 +65,11 @@ type jsonResponse struct {
 	Message string `json:"message"`
 }
 
-func (receiver *Repository) Home(response http.ResponseWriter, request *http.Request) {
+func (c *Controller) Home(response http.ResponseWriter, request *http.Request) {
 	stringMap := make(map[string]string)
-	session := receiver.AppConfigPointer.Session
+	session := c.AppConfigPointer.Session
 
-	var users string = fmt.Sprintf("%v", receiver.DB.AllUsers())
+	var users string = fmt.Sprintf("%v", c.DB.AllUsers())
 	stringMap["remoteaddr"] = users
 
 	stringMap["remoteaddr1"] = request.RemoteAddr
@@ -78,15 +78,15 @@ func (receiver *Repository) Home(response http.ResponseWriter, request *http.Req
 	renderTemplate(response, request, "home.page.tmpl", &models.TemplateData { StringMap: stringMap })
 }
 
-func (receiver *Repository) About(response http.ResponseWriter, request *http.Request) {
+func (c *Controller) About(response http.ResponseWriter, request *http.Request) {
 	stringMap := make(map[string]string)
-	session := receiver.AppConfigPointer.Session
+	session := c.AppConfigPointer.Session
 	stringMap["remoteaddr"] = session.GetString(request.Context(), "remoteaddr")
 
 	renderTemplate(response, request, "about.page.tmpl", &models.TemplateData { StringMap: stringMap })
 }
 
-func (receiver *Repository) Reservation(response http.ResponseWriter, request *http.Request) {
+func (c *Controller) Reservation(response http.ResponseWriter, request *http.Request) {
 	var nullReservation models.Reservation
 	data := make(map[string]interface{})
 	data["reservation"] = nullReservation
@@ -94,7 +94,7 @@ func (receiver *Repository) Reservation(response http.ResponseWriter, request *h
 	renderTemplate(response, request, "reservation.page.tmpl", &models.TemplateData { Form: forms.New(nil), Data: data })
 }
 
-func (receiver *Repository) PostReservation(response http.ResponseWriter, request *http.Request) {
+func (c *Controller) PostReservation(response http.ResponseWriter, request *http.Request) {
 	formError := request.ParseForm()
 	if formError != nil {
 		helpers.ServerError(response, formError)
@@ -133,7 +133,7 @@ func (receiver *Repository) PostReservation(response http.ResponseWriter, reques
 		return
 	}
 
-	reservationId, err := receiver.DB.InsertReservation(reservation)
+	reservationId, err := c.DB.InsertReservation(reservation)
 	if err != nil { helpers.ServerError(response, err) }
 
 	roomRestriction := models.RoomRestriction{
@@ -144,20 +144,20 @@ func (receiver *Repository) PostReservation(response http.ResponseWriter, reques
 		RestrictionId: 1,
 	}
 	// roomRestrictionId
-	_, err2 := receiver.DB.InsertRoomRestriction(roomRestriction)
+	_, err2 := c.DB.InsertRoomRestriction(roomRestriction)
 	if err2 != nil { helpers.ServerError(response, err2) }
 
-	receiver.AppConfigPointer.Session.Put(request.Context(), "reservation", reservation)
+	c.AppConfigPointer.Session.Put(request.Context(), "reservation", reservation)
 	http.Redirect(response, request, "/reservation-summary", http.StatusSeeOther)
 }
 
-func (receiver *Repository) GetReservationSummary(response http.ResponseWriter, request *http.Request) {
+func (c *Controller) GetReservationSummary(response http.ResponseWriter, request *http.Request) {
 	// stringMap := make(map[string]string)
 	data := make(map[string]interface{})
-	session := receiver.AppConfigPointer.Session
+	session := c.AppConfigPointer.Session
 	reservation, fetchingStatus := session.Get(request.Context(), "reservation").(models.Reservation)
 	if !fetchingStatus {
-		receiver.AppConfigPointer.ErrorLog.Println("Can't get error from session")
+		c.AppConfigPointer.ErrorLog.Println("Can't get error from session")
 		session.Put(request.Context(), "error", "Can't get reservation")
 		http.Redirect(response, request, "/reservation", http.StatusTemporaryRedirect)
 		session.Remove(request.Context(), "reservation")
@@ -167,36 +167,55 @@ func (receiver *Repository) GetReservationSummary(response http.ResponseWriter, 
 	renderTemplate(response, request, "reservation-summary.page.tmpl", &models.TemplateData { Data: data })
 }
 
-func (receiver *Repository) General(response http.ResponseWriter, request *http.Request) {
+func (c *Controller) General(response http.ResponseWriter, request *http.Request) {
 	stringMap := make(map[string]string)
 	renderTemplate(response, request, "generals.page.tmpl", &models.TemplateData { StringMap: stringMap })
 }
 
-func (receiver *Repository) Major(response http.ResponseWriter, request *http.Request) {
+func (c *Controller) Major(response http.ResponseWriter, request *http.Request) {
 	stringMap := make(map[string]string)
 	renderTemplate(response, request, "majors.page.tmpl", &models.TemplateData { StringMap: stringMap })
 }
 
-func (receiver *Repository) Contact(response http.ResponseWriter, request *http.Request) {
+func (c *Controller) Contact(response http.ResponseWriter, request *http.Request) {
 	stringMap := make(map[string]string)
 	renderTemplate(response, request, "contacts.page.tmpl", &models.TemplateData { StringMap: stringMap })
 }
 
-func (receiver *Repository) SearchAvailability(response http.ResponseWriter, request *http.Request) {
+func (c *Controller) SearchAvailability(response http.ResponseWriter, request *http.Request) {
 	stringMap := make(map[string]string)
 	renderTemplate(response, request, "search-availability.page.tmpl", &models.TemplateData { StringMap: stringMap })
 }
 
-func (receiver *Repository) PostSearchAvailability(response http.ResponseWriter, request *http.Request) {
+func (c *Controller) PostSearchAvailability(response http.ResponseWriter, request *http.Request) {
 	start := request.Form.Get("start")
 	end := request.Form.Get("end")
+	dateLayout := "2006-01-02"
+	startDate, err := time.Parse(dateLayout, start)
+	if err != nil {
+		helpers.ServerError(response, err)
+		return
+	}
+	endDate, err := time.Parse(dateLayout, end)
+	if err != nil {
+		helpers.ServerError(response, err)
+		return
+	}
+	rooms, err := c.DB.SerachRoomsAvailability(&startDate, &endDate)
+	if err != nil {
+		helpers.ServerError(response, err)
+		return
+	}
+	for _, room := range rooms {
+		c.AppConfigPointer.InfoLog.Println("Room:", room.Id, room.RoomName)
+	}
 
 	response.Write([]byte(fmt.Sprintf("Start date is %s, end date is %s", start, end)))
 	// stringMap := make(map[string]string)
 	// renderTemplate(response, request, "search-availability.page.tmpl", &models.TemplateData { StringMap: stringMap })
 }
 
-func (receiver *Repository) PostSearchAvailabilityJson(response http.ResponseWriter, request *http.Request) {
+func (c *Controller) PostSearchAvailabilityJson(response http.ResponseWriter, request *http.Request) {
 	resp := jsonResponse { OK: true, Message: "Available!" }
 	out, err := json.Marshal(resp)
 	if err != nil {

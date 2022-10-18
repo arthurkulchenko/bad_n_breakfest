@@ -5,7 +5,7 @@ import(
 	"time"
 )
 
-type DatabaseRepo interface {
+type DatabaseInterface interface {
 	AllUsers() bool
 	InsertReservation(res models.Reservation) (int, error)
 	InsertRoomRestriction(res models.RoomRestriction) (int, error)
