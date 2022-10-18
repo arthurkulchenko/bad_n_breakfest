@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"fmt"
-	// "errors"
+	"errors"
 	"strconv"
 	"encoding/json"
 	"net/http"
@@ -11,6 +11,7 @@ import (
 	"log"
 	"path/filepath"
 	"bytes"
+	"github.com/go-chi/chi/v5"
 	"github.com/arthurkulchenko/bed_n_breakfest/internal/config"
 	"github.com/justinas/nosurf"
 	"github.com/arthurkulchenko/bed_n_breakfest/internal/models"
@@ -87,11 +88,26 @@ func (c *Controller) About(response http.ResponseWriter, request *http.Request) 
 }
 
 func (c *Controller) Reservation(response http.ResponseWriter, request *http.Request) {
-	var nullReservation models.Reservation
+	reservation, ok := c.AppConfigPointer.Session.Get(request.Context(), "reservation").(models.Reservation)
+	if !ok {
+		helpers.ServerError(response, errors.New("cannot get reservation from session"))
+		return
+	}
+	sd := reservation.StartDate.Format("2006-01-02")
+	ed := reservation.EndDate.Format("2006-01-02")
+	room, err := c.DB.FindRoomById(reservation.RoomId)
+	if err != nil {
+		helpers.ServerError(response, err)
+		return
+	}
+	reservation.Room = room
+	stringMap := make(map[string]string)
+	stringMap["start_date"] = sd
+	stringMap["end_date"] = ed
 	data := make(map[string]interface{})
-	data["reservation"] = nullReservation
+	data["reservation"] = reservation
 
-	renderTemplate(response, request, "reservation.page.tmpl", &models.TemplateData { Form: forms.New(nil), Data: data })
+	renderTemplate(response, request, "reservation.page.tmpl", &models.TemplateData { Form: forms.New(nil), Data: data, StringMap: stringMap })
 }
 
 func (c *Controller) PostReservation(response http.ResponseWriter, request *http.Request) {
@@ -214,8 +230,8 @@ func (c *Controller) PostSearchAvailability(response http.ResponseWriter, reques
 
 	data := make(map[string]interface{})
 	data["rooms"] = rooms
-	dummyReservation := Reservation{StartDate: startDate, EndDate: endDate}
-	c.AppConfigPointer.Session.Put(request.Context(), "dReservation", dummyReservation)
+	dummyReservation := models.Reservation{StartDate: startDate, EndDate: endDate}
+	c.AppConfigPointer.Session.Put(request.Context(), "reservation", dummyReservation)
 	renderTemplate(response, request, "choose-room.page.tmpl", &models.TemplateData { Data: data })
 }
 
@@ -229,6 +245,24 @@ func (c *Controller) PostSearchAvailabilityJson(response http.ResponseWriter, re
 
 	response.Header().Set("Content-Type", "application/json")
 	response.Write([]byte(fmt.Sprintf("%s", out)))
+}
+
+func (c *Controller) GetChooseRoom(response http.ResponseWriter, request *http.Request) {
+	roomId, err := strconv.Atoi(chi.URLParam(request, "id"))
+	if err != nil {
+		helpers.ServerError(response, err)
+		return
+	}
+	reservation, ok := c.AppConfigPointer.Session.Get(request.Context(), "reservation").(models.Reservation)
+	if !ok {
+		helpers.ServerError(response, err)
+		return
+	}
+	reservation.RoomId = roomId
+	c.AppConfigPointer.Session.Put(request.Context(), "reservation", reservation)
+	// c.DB.
+	http.Redirect(response, request, "/reservation", http.StatusSeeOther)
+
 }
 
 func addDefaultData(templateDataPointer *models.TemplateData, request *http.Request) *models.TemplateData {
