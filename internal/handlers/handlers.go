@@ -39,17 +39,6 @@ func SetConfigAndRepository(appConfigPointer *config.AppConfig, db *driver.DB) {
 	}
 }
 
-// func NewRepo(pointer *config.AppConfig, db *driver.DB) *Controller {
-// 	return &Repository {
-// 		AppConfigPointer: pointer,
-// 		DB dbrepo.NewPostgresRepo(db.SQL, a)
-// 	}
-// }
-
-// func NewHandlers(ControllerPointer *Controller) {
-// 	ControllerPointer = ControllerPointer
-// }
-
 type TemplateData struct {
 	StringMap map[string]string
 	IntMap map[string]int
@@ -93,14 +82,15 @@ func (c *Controller) Reservation(response http.ResponseWriter, request *http.Req
 		helpers.ServerError(response, errors.New("cannot get reservation from session"))
 		return
 	}
-	sd := reservation.StartDate.Format("2006-01-02")
-	ed := reservation.EndDate.Format("2006-01-02")
 	room, err := c.DB.FindRoomById(reservation.RoomId)
 	if err != nil {
 		helpers.ServerError(response, err)
 		return
 	}
 	reservation.Room = room
+	sd := reservation.StartDate.Format("2006-01-02")
+	ed := reservation.EndDate.Format("2006-01-02")
+	c.AppConfigPointer.Session.Put(request.Context(), "reservation", reservation)
 	stringMap := make(map[string]string)
 	stringMap["start_date"] = sd
 	stringMap["end_date"] = ed
@@ -111,31 +101,35 @@ func (c *Controller) Reservation(response http.ResponseWriter, request *http.Req
 }
 
 func (c *Controller) PostReservation(response http.ResponseWriter, request *http.Request) {
+	sessionRreservation, ok := c.AppConfigPointer.Session.Get(request.Context(), "reservation").(models.Reservation)
+	if !ok { helpers.ServerError(response, errors.New("can't read session")); return }
+	// if err != nil { helpers.ServerError(response, err) }
 	formError := request.ParseForm()
 	if formError != nil {
 		helpers.ServerError(response, formError)
 		return
 	}
 
-	sd := request.Form.Get("start_date")
-	ed :=  request.Form.Get("end_date")
-	// 01/02 03:04:05PM '06 -0700
-	dateLayout := "2006-01-02"
-	startDate, err := time.Parse(dateLayout, sd)
-	if err != nil { helpers.ServerError(response, err) }
-	endDate, err := time.Parse(dateLayout, ed)
-	if err != nil { helpers.ServerError(response, err) }
-	roomId, err := strconv.Atoi(request.Form.Get("room_id"))
-	if err != nil { helpers.ServerError(response, err) }
+	// sd := request.Form.Get("start_date")
+	// ed :=  request.Form.Get("end_date")
+	// // 01/02 03:04:05PM '06 -0700
+	// dateLayout := "2006-01-02"
+	// startDate, err := time.Parse(dateLayout, sd)
+	// if err != nil { helpers.ServerError(response, err) }
+	// endDate, err := time.Parse(dateLayout, ed)
+	// if err != nil { helpers.ServerError(response, err) }
+	// roomId, err := strconv.Atoi(request.Form.Get("room_id"))
+	// if err != nil { helpers.ServerError(response, err) }
 
 	reservation := models.Reservation{
 		FirstName: request.Form.Get("first_name"),
 		LastName: request.Form.Get("last_name"),
 		Email: request.Form.Get("email"),
 		Phone: request.Form.Get("phone"),
-		StartDate: startDate,
-		EndDate: endDate,
-		RoomId: roomId,
+		StartDate: sessionRreservation.StartDate,
+		EndDate: sessionRreservation.EndDate,
+		RoomId: sessionRreservation.RoomId,
+		// Room: sessionRreservation.Room,
 	}
 	form := forms.New(request.PostForm)
 	// form.Has("first_name", request)
@@ -150,12 +144,16 @@ func (c *Controller) PostReservation(response http.ResponseWriter, request *http
 	}
 
 	reservationId, err := c.DB.InsertReservation(reservation)
+	sessionRreservation.FirstName = request.Form.Get("first_name")
+	sessionRreservation.LastName = request.Form.Get("last_name")
+	sessionRreservation.Email = request.Form.Get("email")
+	sessionRreservation.Phone = request.Form.Get("phone")
 	if err != nil { helpers.ServerError(response, err) }
 
 	roomRestriction := models.RoomRestriction{
-		StartDate: startDate,
-		EndDate: endDate,
-		RoomId: roomId,
+		StartDate: sessionRreservation.StartDate,
+		EndDate: sessionRreservation.EndDate,
+		RoomId: sessionRreservation.RoomId,
 		ReservationId: reservationId,
 		RestrictionId: 1,
 	}
@@ -163,7 +161,7 @@ func (c *Controller) PostReservation(response http.ResponseWriter, request *http
 	_, err2 := c.DB.InsertRoomRestriction(roomRestriction)
 	if err2 != nil { helpers.ServerError(response, err2) }
 
-	c.AppConfigPointer.Session.Put(request.Context(), "reservation", reservation)
+	c.AppConfigPointer.Session.Put(request.Context(), "reservation", sessionRreservation)
 	http.Redirect(response, request, "/reservation-summary", http.StatusSeeOther)
 }
 
@@ -181,21 +179,6 @@ func (c *Controller) GetReservationSummary(response http.ResponseWriter, request
 	}
 	data["reservation"] = reservation
 	renderTemplate(response, request, "reservation-summary.page.tmpl", &models.TemplateData { Data: data })
-}
-
-func (c *Controller) General(response http.ResponseWriter, request *http.Request) {
-	stringMap := make(map[string]string)
-	renderTemplate(response, request, "generals.page.tmpl", &models.TemplateData { StringMap: stringMap })
-}
-
-func (c *Controller) Major(response http.ResponseWriter, request *http.Request) {
-	stringMap := make(map[string]string)
-	renderTemplate(response, request, "majors.page.tmpl", &models.TemplateData { StringMap: stringMap })
-}
-
-func (c *Controller) Contact(response http.ResponseWriter, request *http.Request) {
-	stringMap := make(map[string]string)
-	renderTemplate(response, request, "contacts.page.tmpl", &models.TemplateData { StringMap: stringMap })
 }
 
 func (c *Controller) SearchAvailability(response http.ResponseWriter, request *http.Request) {
@@ -263,6 +246,21 @@ func (c *Controller) GetChooseRoom(response http.ResponseWriter, request *http.R
 	// c.DB.
 	http.Redirect(response, request, "/reservation", http.StatusSeeOther)
 
+}
+
+func (c *Controller) General(response http.ResponseWriter, request *http.Request) {
+	stringMap := make(map[string]string)
+	renderTemplate(response, request, "generals.page.tmpl", &models.TemplateData { StringMap: stringMap })
+}
+
+func (c *Controller) Major(response http.ResponseWriter, request *http.Request) {
+	stringMap := make(map[string]string)
+	renderTemplate(response, request, "majors.page.tmpl", &models.TemplateData { StringMap: stringMap })
+}
+
+func (c *Controller) Contact(response http.ResponseWriter, request *http.Request) {
+	stringMap := make(map[string]string)
+	renderTemplate(response, request, "contacts.page.tmpl", &models.TemplateData { StringMap: stringMap })
 }
 
 func addDefaultData(templateDataPointer *models.TemplateData, request *http.Request) *models.TemplateData {
